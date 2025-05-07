@@ -60,7 +60,7 @@ class AppHandler:
 
         # 4.调用链得到结果
         content = chain.invoke({"query": req.query.data})
-
+        print('生成内容:', content)
         return success_json({"content": content})
 
     def ping(self):
