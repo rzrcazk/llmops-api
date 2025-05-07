@@ -5,7 +5,7 @@
 @Author  : thezehui@gmail.com
 @File    : 3.BaseTool子类创建工具.py
 """
-from typing import Any, Type
+from typing import Any, type
 
 from pydantic import BaseModel, Field
 from langchain_core.tools import BaseTool
@@ -20,7 +20,7 @@ class MultiplyTool(BaseTool):
     """乘法计算工具"""
     name: str = "multiply_tool"
     description: str = "将传递的两个数字相乘后返回"
-    args_schema: Type[BaseModel] = MultiplyInput
+    args_schema: type[BaseModel] = MultiplyInput
 
     def _run(self, *args: Any, **kwargs: Any) -> Any:
         """将传入的a和b相乘后返回"""

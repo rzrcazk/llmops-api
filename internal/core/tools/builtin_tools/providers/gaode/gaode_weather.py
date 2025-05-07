@@ -7,7 +7,7 @@
 """
 import json
 import os
-from typing import Any, Type
+from typing import Any, type
 
 import requests
 from pydantic import BaseModel, Field
@@ -24,7 +24,7 @@ class GaodeWeatherTool(BaseTool):
     """根据传入的城市名查询天气"""
     name: str = "gaode_weather"
     description: str = "当你想查询天气或者与天气相关的问题时可以使用的工具"
-    args_schema: Type[BaseModel] = GaodeWeatherArgsSchema
+    args_schema: type[BaseModel] = GaodeWeatherArgsSchema
 
     def _run(self, *args: Any, **kwargs: Any) -> str:
         """根据传入的城市名称运行调用api获取城市对应的天气预报信息"""

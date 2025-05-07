@@ -7,7 +7,7 @@
 """
 import json
 import os
-from typing import Type, Any
+from typing import type, Any
 
 import dotenv
 import requests
@@ -15,7 +15,7 @@ from langchain_community.tools import GoogleSerperRun
 from langchain_community.utilities import GoogleSerperAPIWrapper
 from langchain_core.messages import ToolMessage
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.pydantic_v1 import Field, BaseModel
+from pydantic import BaseModel, Field
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.tools import BaseTool
 from langchain_openai import ChatOpenAI
@@ -35,7 +35,7 @@ class GaodeWeatherTool(BaseTool):
     """根据传入的城市名查询天气"""
     name: str = "gaode_weather"
     description: str = "当你想查询天气或者与天气相关的问题时可以使用的工具"
-    args_schema: Type[BaseModel] = GaodeWeatherArgsSchema
+    args_schema: type[BaseModel] = GaodeWeatherArgsSchema
 
     def _run(self, *args: Any, **kwargs: Any) -> str:
         """运行工具获取对应城市的天气预报"""
