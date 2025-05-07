@@ -42,6 +42,14 @@ class Http(Flask):
         db.init_app(self)
         migrate.init_app(self, db, directory="internal/migration")
 
+        # 5.处理跨域
+        # CORS(self, resources={
+        #     r"/*": {
+        #         "origins": "*",
+        #         "supports_credentials": True,
+        #     },
+        # })
+
         # 5.注册应用路由
         router.register_router(self)
 
