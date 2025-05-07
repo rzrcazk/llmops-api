@@ -9,10 +9,10 @@ from operator import itemgetter
 
 import dotenv
 from langchain.memory import ConversationSummaryBufferMemory
-from langchain_community.chat_models.baidu_qianfan_endpoint import QianfanChatEndpoint
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import RunnablePassthrough, RunnableLambda
+from langchain_openai import ChatOpenAI
 
 dotenv.load_dotenv()
 
@@ -26,13 +26,11 @@ memory = ConversationSummaryBufferMemory(
     max_token_limit=300,
     return_messages=True,
     input_key="query",
-    llm=QianfanChatEndpoint(),
-    # llm=ChatOpenAI(model="gpt-3.5-turbo-16k"),
+    llm=ChatOpenAI(model="gpt-3.5-turbo-16k"),
 )
 
 # 2.创建大语言模型
-# llm = ChatOpenAI(model="gpt-3.5-turbo-16k")
-llm = QianfanChatEndpoint()
+llm = ChatOpenAI(model="gpt-3.5-turbo-16k")
 
 # 3.构建链应用
 chain = RunnablePassthrough.assign(

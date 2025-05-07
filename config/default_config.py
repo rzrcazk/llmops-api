@@ -9,7 +9,7 @@
 DEFAULT_CONFIG = {
     # wft配置
     "WTF_CSRF_ENABLED": "False",
-    
+
     # SQLAlchemy数据库配置
     "SQLALCHEMY_DATABASE_URI": "",
     "SQLALCHEMY_POOL_SIZE": 30,
