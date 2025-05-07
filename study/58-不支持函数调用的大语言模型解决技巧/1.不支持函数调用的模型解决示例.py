@@ -33,8 +33,8 @@ class GoogleSerperArgsSchema(BaseModel):
 
 class GaodeWeatherTool(BaseTool):
     """根据传入的城市名查询天气"""
-    name = "gaode_weather"
-    description = "当你想询问天气或与天气相关的问题时的工具。"
+    name: str = "gaode_weather"
+    description: str = "当你想查询天气或者与天气相关的问题时可以使用的工具"
     args_schema: Type[BaseModel] = GaodeWeatherArgsSchema
 
     def _run(self, *args: Any, **kwargs: Any) -> str:

@@ -23,6 +23,7 @@ from langchain_core.tracers import Run
 from langchain_openai import ChatOpenAI
 
 from internal.schema.app_schema import CompletionReq
+from internal.service import ApiToolService
 from internal.service import AppService, VectorDatabaseService
 from pkg.response import success_json, validate_error_json, success_message
 
@@ -33,6 +34,7 @@ class AppHandler:
     """应用控制器"""
     app_service: AppService
     vector_database_service: VectorDatabaseService
+    api_tool_service: ApiToolService
 
     def create_app(self):
         """调用服务创建新的APP记录"""
@@ -112,5 +114,6 @@ class AppHandler:
         return "\n\n".join([document.page_content for document in documents])
 
     def ping(self):
-        return success_json()
+        return self.api_tool_service.api_tool_invoke()
+        # return success_json()
         # raise FailException("数据未找到")

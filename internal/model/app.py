@@ -5,7 +5,6 @@
 @Author  : thezehui@gmail.com
 @File    : app.py
 """
-
 from sqlalchemy import (
     Column,
     UUID,
