@@ -5,6 +5,7 @@
 @Author  : thezehui@gmail.com
 @File    : __init__.py.py
 """
+from .account import Account, AccountOAuth
 from .api_tool import ApiTool, ApiToolProvider
 from .app import App, AppDatasetJoin
 from .conversation import Conversation, Message, MessageAgentThought
@@ -17,4 +18,5 @@ __all__ = [
     "UploadFile",
     "Dataset", "Document", "Segment", "KeywordTable", "DatasetQuery", "ProcessRule",
     "Conversation", "Message", "MessageAgentThought",
+    "Account", "AccountOAuth",
 ]
