@@ -1,0 +1,41 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Pydantic 2.x 迁移与自动修复规则
+
+## 导入替换
+
+- 将 `from langchain_core.pydantic_v1 import BaseModel, Field` 替换为 `from pydantic import BaseModel, Field`
+- 将 `from langchain_core.pydantic_v1 import BaseModel` 替换为 `from pydantic import BaseModel`
+- 将 `from langchain_core.pydantic_v1 import Field` 替换为 `from pydantic import Field`
+
+## BaseTool/BaseModel 子类字段类型注解自动补全
+
+- 自动为 BaseTool 子类的 `name` 字段补全类型注解：  
+  ```python
+  name: str = "xxx"
+  ```
+- 自动为 BaseTool 子类的 `description` 字段补全类型注解：  
+  ```python
+  description: str = "xxx"
+  ```
+- 自动为 BaseTool 子类的 `args_schema` 字段补全类型注解：  
+  ```python
+  args_schema: type = XxxSchema
+  ```
+
+---
+## 推荐正则（可用于批量替换工具/AI编辑器）
+
+- 导入替换：
+  - `from langchain_core.pydantic_v1 import BaseModel, Field` → `from pydantic import BaseModel, Field`
+  - `from langchain_core.pydantic_v1 import BaseModel` → `from pydantic import BaseModel`
+  - `from langchain_core.pydantic_v1 import Field` → `from pydantic import Field`
+- 字段类型注解补全（正则，需支持多行匹配）：
+  - `class\s+\w+\(BaseTool\):[\s\S]*?^\s*name\s*=\s*(['\"].*['\"])` → `name: str = $1`
+  - `class\s+\w+\(BaseTool\):[\s\S]*?^\s*description\s*=\s*(['\"].*['\"])` → `description: str = $1`
+  - `class\s+\w+\(BaseTool\):[\s\S]*?^\s*args_schema\s*=\s*(\w+)` → `args_schema: type = $1`
+
+---
