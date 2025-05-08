@@ -1,4 +1,37 @@
 .idea
+
+# Python相关
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.pytest_cache/
+htmlcov/
+.coverage
+.coverage.*
+.cache/
+nosetests.xml
+coverage.xml
+*.cover
+
+# 虚拟环境
 .env
-.
+.venv/
+env/
+venv/
+ENV/
+
+# IDE相关
+.idea/
+.vscode/
+*.swp
+*.swo
+.cursor/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+
 
