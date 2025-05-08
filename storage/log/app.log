@@ -43,3 +43,13 @@
  * Running on http://127.0.0.1:5000
 [2025-05-08 23:27:38,003.003] _internal.py -> _log line:97 [INFO]: [33mPress CTRL+C to quit[0m
 [2025-05-08 23:27:38,006.006] _internal.py -> _log line:97 [INFO]:  * Restarting with stat
+[2025-05-08 23:29:30,858.858] _internal.py -> _log line:97 [INFO]: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+[2025-05-08 23:29:30,859.859] _internal.py -> _log line:97 [INFO]: [33mPress CTRL+C to quit[0m
+[2025-05-08 23:29:30,862.862] _internal.py -> _log line:97 [INFO]:  * Restarting with stat
+[2025-05-08 23:35:39,316.316] _internal.py -> _log line:97 [INFO]: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+[2025-05-08 23:35:39,317.317] _internal.py -> _log line:97 [INFO]: [33mPress CTRL+C to quit[0m
+[2025-05-08 23:35:39,319.319] _internal.py -> _log line:97 [INFO]:  * Restarting with stat
+[2025-05-08 23:36:00,429.429] _internal.py -> _log line:97 [WARNING]:  * Debugger is active!
+[2025-05-08 23:36:00,465.465] _internal.py -> _log line:97 [INFO]:  * Debugger PIN: 142-895-255
