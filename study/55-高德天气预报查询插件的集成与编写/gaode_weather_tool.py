@@ -25,7 +25,7 @@ class GaodeWeatherTool(BaseTool):
     """高德天气查询工具"""
     name: str = "gaode_weather"
     description: str = "根据城市名称查询天气预报，支持全国大部分城市，返回天气、温度等信息"
-    args_schema: type[BaseModel] = GaodeWeatherArgsSchema
+    args_schema: type[GaodeWeatherArgsSchema] = GaodeWeatherArgsSchema
 
     def _run(self, *args: Any, **kwargs: Any) -> str:
         """根据传入的城市名称运行调用api获取城市对应的天气预报信息"""

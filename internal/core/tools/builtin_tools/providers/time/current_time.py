@@ -12,11 +12,15 @@ from pydantic import BaseModel
 from langchain_core.tools import BaseTool
 
 
+class CurrentTimeToolInput(BaseModel):
+    pass
+
+
 class CurrentTimeTool(BaseTool):
     """一个用于获取当前时间的工具"""
-    name = "current_time"
-    description = "一个用于获取当前时间的工具"
-    args_schema: Type[BaseModel] = BaseModel
+    name: str = "current_time"
+    description: str = "一个用于获取当前时间的工具"
+    args_schema: type[CurrentTimeToolInput] = CurrentTimeToolInput
 
     def _run(self, *args: Any, **kwargs: Any) -> Any:
         """获取当前系统的时间并进行格式化后返回"""
