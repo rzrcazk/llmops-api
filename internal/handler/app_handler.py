@@ -12,7 +12,6 @@ from flask import request
 from flask_login import login_required, current_user
 from injector import inject
 
-from internal.core.language_model import LanguageModelManager
 from internal.schema.app_schema import (
     CreateAppReq,
     UpdateAppReq,
@@ -38,7 +37,6 @@ class AppHandler:
     """应用控制器"""
     app_service: AppService
     retrieval_service: RetrievalService
-    language_model_manager: LanguageModelManager
 
     @login_required
     def create_app(self):
@@ -219,6 +217,18 @@ class AppHandler:
         resp = GetDebugConversationMessagesWithPageResp(many=True)
 
         return success_json(PageModel(list=resp.dump(messages), paginator=paginator))
+
+    @login_required
+    def get_published_config(self, app_id: UUID):
+        """根据传递的应用id获取应用的发布配置信息"""
+        published_config = self.app_service.get_published_config(app_id, current_user)
+        return success_json(published_config)
+
+    @login_required
+    def regenerate_web_app_token(self, app_id: UUID):
+        """根据传递的应用id重新生成WebApp凭证标识"""
+        token = self.app_service.regenerate_web_app_token(app_id, current_user)
+        return success_json({"token": token})
 
     @login_required
     def ping(self):

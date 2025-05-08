@@ -27,12 +27,12 @@ class NodeType(str, Enum):
 class BaseNodeData(BaseModel):
     """基础节点数据"""
 
-    model_config = ConfigDict(populate_by_name=True)
-
     class Position(BaseModel):
         """节点坐标基础模型"""
         x: float = 0
         y: float = 0
+
+    model_config = ConfigDict(populate_by_name=True)  # 允许通过字段名进行赋值
 
     id: UUID  # 节点id，数值必须唯一
     node_type: NodeType  # 节点类型

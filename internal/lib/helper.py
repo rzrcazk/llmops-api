@@ -11,6 +11,8 @@ from enum import Enum
 from hashlib import sha3_256
 from typing import Any
 from uuid import UUID
+import secrets
+import string
 
 from langchain_core.documents import Document
 from pydantic import BaseModel
@@ -101,3 +103,9 @@ def get_value_type(value: Any) -> Any:
         return "boolean"
 
     return value_type
+
+
+def generate_random_string(length: int) -> str:
+    """根据传递的长度生成随机字符串，包含大小写字母和数字"""
+    alphabet = string.ascii_letters + string.digits
+    return ''.join(secrets.choice(alphabet) for _ in range(length))
