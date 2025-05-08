@@ -8,7 +8,7 @@
 from enum import Enum
 from typing import Optional
 
-from pydantic import Field, field_validator, HttpUrl
+from pydantic import Field, validator, HttpUrl
 
 from internal.core.workflow.entities.node_entity import BaseNodeData
 from internal.core.workflow.entities.variable_entity import VariableEntity, VariableType, VariableValueType
@@ -49,11 +49,11 @@ class HttpRequestNodeData(BaseNodeData):
         ],
     )
 
-    @field_validator("url", mode='before')
+    @validator("url", pre=True, always=True)
     def validate_url(cls, url: Optional[HttpUrl]):
         return url if url != "" else None
 
-    @field_validator("outputs", mode='before')
+    @validator("outputs", pre=True)
     def validate_outputs(cls, outputs: list[VariableEntity]):
         return [
             VariableEntity(
@@ -64,7 +64,7 @@ class HttpRequestNodeData(BaseNodeData):
             VariableEntity(name="text", value={"type": VariableValueType.GENERATED}),
         ]
 
-    @field_validator("inputs")
+    @validator("inputs")
     def validate_inputs(cls, inputs: list[VariableEntity]):
         """校验输入列表数据"""
         # 1.校验判断输入变量列表中的类型信息

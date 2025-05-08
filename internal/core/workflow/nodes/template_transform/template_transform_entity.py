@@ -5,7 +5,7 @@
 @Author  : thezehui@gmail.com
 @File    : template_transform_entity.py
 """
-from pydantic import Field, field_validator
+from pydantic import Field, validator
 
 from internal.core.workflow.entities.node_entity import BaseNodeData
 from internal.core.workflow.entities.variable_entity import VariableEntity, VariableValueType
@@ -21,7 +21,7 @@ class TemplateTransformNodeData(BaseNodeData):
         ]
     )
 
-    @field_validator("outputs", mode='before')
+    @validator("outputs", pre=True)
     def validate_outputs(cls, outputs: list[VariableEntity]):
         return [
             VariableEntity(name="output", value={"type": VariableValueType.GENERATED})
