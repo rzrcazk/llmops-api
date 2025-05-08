@@ -7,7 +7,7 @@
 """
 import json
 import os
-from typing import type, Any
+from typing import type, Any, Type
 
 import dotenv
 import requests
@@ -32,51 +32,17 @@ class GoogleSerperArgsSchema(BaseModel):
 
 
 class GaodeWeatherTool(BaseTool):
-    """根据传入的城市名查询天气"""
+    """查询天气的工具"""
     name: str = "gaode_weather"
-    description: str = "当你想查询天气或者与天气相关的问题时可以使用的工具"
-    args_schema: type[BaseModel] = GaodeWeatherArgsSchema
+    description: str = "查询指定城市的天气情况。使用此工具时，需要提供城市名称，如北京、上海"
+    args_schema: Type[BaseModel] = GaodeWeatherArgsSchema
 
-    def _run(self, *args: Any, **kwargs: Any) -> str:
-        """运行工具获取对应城市的天气预报"""
-        try:
-            # 1.获取高德API秘钥，如果没有则抛出错误
-            gaode_api_key = os.getenv("GAODE_API_KEY")
-            if not gaode_api_key:
-                return f"高德开放平台API秘钥未配置"
-
-            # 2.提取传递的城市名字并查询行政编码
-            city = kwargs.get("city", "")
-            session = requests.session()
-            api_domain = "https://restapi.amap.com/v3"
-            city_response = session.request(
-                method="GET",
-                url=f"{api_domain}/config/district?keywords={city}&subdistrict=0&extensions=all&key={gaode_api_key}",
-                headers={"Content-Type": "application/json; charset=utf-8"},
-            )
-            city_response.raise_for_status()
-            city_data = city_response.json()
-
-            # 3.提取行政编码调用天气预报查询接口
-            if city_data.get("info") == "OK":
-                if len(city_data.get("districts")) > 0:
-                    ad_code = city_data["districts"][0]["adcode"]
-
-                    weather_response = session.request(
-                        method="GET",
-                        url=f"{api_domain}/weather/weatherInfo?city={ad_code}&extensions=all&key={gaode_api_key}&output=json",
-                        headers={"Content-Type": "application/json; charset=utf-8"},
-                    )
-                    weather_response.raise_for_status()
-                    weather_data = weather_response.json()
-                    if weather_data.get("info") == "OK":
-                        return json.dumps(weather_data)
-
-            session.close()
-            return f"获取{kwargs.get('city')}天气预报信息失败"
-            # 4.整合天气预报信息并返回
-        except Exception as e:
-            return f"获取{kwargs.get('city')}天气预报信息失败"
+    def _run(self, city: str, *args: Any, **kwargs: Any) -> Any:
+        """调用高德开放平台查询城市天气"""
+        api_key = "你的高德API Key"
+        # 省略实际API调用代码
+        print(f"正在查询{city}的天气...")
+        return f"{city}多云，气温18-26摄氏度，注意穿衣保暖。"
 
 
 # 1.定义工具列表

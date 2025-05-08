@@ -7,7 +7,7 @@
 """
 import json
 import os
-from typing import type, Any
+from typing import type, Any, Type
 
 import dotenv
 import requests
@@ -26,10 +26,10 @@ class GaodeWeatherArgsSchema(BaseModel):
 
 
 class GaodeWeatherTool(BaseTool):
-    """根据传入的城市名查询天气"""
+    """高德天气查询工具"""
     name: str = "gaode_weather"
-    description: str = "当你想查询天气或者与天气相关的问题时可以使用的工具"
-    args_schema: type[BaseModel] = GaodeWeatherArgsSchema
+    description: str = "根据城市名称查询天气预报，支持全国大部分城市，返回天气、温度等信息"
+    args_schema: Type[BaseModel] = GaodeWeatherArgsSchema
 
     def _run(self, *args: Any, **kwargs: Any) -> str:
         """运行工具获取对应城市的天气预报"""
