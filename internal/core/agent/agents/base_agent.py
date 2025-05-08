@@ -12,7 +12,7 @@ from typing import Optional, Any, Iterator
 
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.load import Serializable
-from pydantic import PrivateAttr
+from pydantic import PrivateAttr, ConfigDict
 from langchain_core.runnables import Runnable, RunnableConfig
 from langgraph.graph.state import CompiledStateGraph
 
@@ -29,9 +29,7 @@ class BaseAgent(Serializable, Runnable):
     _agent: CompiledStateGraph = PrivateAttr(None)
     _agent_queue_manager: AgentQueueManager = PrivateAttr(None)
 
-    class Config:
-        # 字段允许接收任意类型，且不需要校验器
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def __init__(
             self,
