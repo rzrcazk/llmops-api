@@ -4,3 +4,11 @@
 [2025-05-08 22:48:32,363.363] _internal.py -> _log line:97 [INFO]:  * Restarting with stat
 [2025-05-08 22:49:16,113.113] _internal.py -> _log line:97 [WARNING]:  * Debugger is active!
 [2025-05-08 22:49:16,160.160] _internal.py -> _log line:97 [INFO]:  * Debugger PIN: 142-895-255
+[2025-05-08 22:51:27,872.872] _internal.py -> _log line:97 [INFO]: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+[2025-05-08 22:51:27,873.873] _internal.py -> _log line:97 [INFO]: [33mPress CTRL+C to quit[0m
+[2025-05-08 22:51:27,877.877] _internal.py -> _log line:97 [INFO]:  * Restarting with stat
+[2025-05-08 22:52:07,310.310] _internal.py -> _log line:97 [WARNING]:  * Debugger is active!
+[2025-05-08 22:52:07,330.330] _internal.py -> _log line:97 [INFO]:  * Debugger PIN: 142-895-255
+[2025-05-08 22:52:35,602.602] _internal.py -> _log line:97 [INFO]:  * Detected change in '/Users/yanjuan/PycharmProjects/llmops-api/internal/entity/dataset_entity.py', reloading
+[2025-05-08 22:52:36,780.780] _internal.py -> _log line:97 [INFO]:  * Restarting with stat
