@@ -1,0 +1,73 @@
+# Python 缓存文件
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# 测试覆盖率报告
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# 虚拟环境
+.env
+.venv/
+env/
+venv/
+ENV/
+.conda/
+
+# 构建和分发
+build/
+dist/
+*.egg-info/
+*.egg
+
+# 日志文件
+*.log
+logs/
+
+# 本地配置文件
+local_settings.py
+settings_local.py
+
+# 数据库文件
+*.sqlite3
+*.db
+
+# 临时文件
+*.tmp
+*.bak
+*.swp
+*.swo
+*~
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 依赖管理
+node_modules/
+package-lock.json
+yarn.lock
+
+# 其他IDE和编辑器文件
+.idea/
+.vscode/
+
+# 大文件和数据集
+*.csv
+*.parquet
+*.pkl
+*.joblib
+*.bin
+data/raw/
+data/processed/
+models/
+
+# 环境变量
+.env
+.env.* 

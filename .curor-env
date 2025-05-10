@@ -1,0 +1,3 @@
+python:
+  conda_env: llmops-api
+  conda_path: /Users/yuanjuan/PycharmProjects/llmops-api/.conda
