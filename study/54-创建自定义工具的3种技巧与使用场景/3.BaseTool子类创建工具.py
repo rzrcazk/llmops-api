@@ -20,7 +20,7 @@ class MultiplyTool(BaseTool):
     """乘法计算工具"""
     name: str = "multiply"
     description: str = "当需要计算两个数相乘时使用此工具"
-    args_schema: type = MultiplyInput
+    args_schema: type[MultiplyInput] = MultiplyInput
 
     def _run(self, a: float, b: float, **kwargs) -> float:
         """执行乘法计算"""

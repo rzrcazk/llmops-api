@@ -108,9 +108,20 @@ Associated Protocol: RIPER-5 + Multidimensional + Agent Protocol
     - 将 `description = "当你想查询天气或者与天气相关的问题时可以使用的工具"` 替换为 `description: str = "当你想查询天气或者与天气相关的问题时可以使用的工具"`
     - 将 `args_schema: Type[BaseModel] = GaodeWeatherArgsSchema` 替换为 `args_schema: type[BaseModel] = GaodeWeatherArgsSchema`
 
+## 解决 Validator 警告
+19. 修改 `internal/core/workflow/entities/variable_entity.py`：将 `@validator` 替换为 `@field_validator` (3处)，并更新导入。
+20. 修改 `internal/core/workflow/entities/workflow_entity.py`：将 `@root_validator` 替换为 `@model_validator`，并更新导入。
+21. 修改 `internal/core/workflow/nodes/dataset_retrieval/dataset_retrieval_entity.py`：将 `@validator` 替换为 `@field_validator` (2处)，并更新导入。
+22. 修改 `internal/core/workflow/nodes/http_request/http_request_entity.py`：将 `@validator` 替换为 `@field_validator` (3处)，并更新导入。
+23. 修改 `internal/core/workflow/nodes/llm/llm_entity.py`：将 `@validator` 替换为 `@field_validator` (1处)，并更新导入。
+24. 修改 `internal/core/workflow/nodes/template_transform/template_transform_entity.py`：将 `@validator` 替换为 `@field_validator` (1处)，并更新导入。
+25. 修改 `internal/core/workflow/nodes/tool/tool_entity.py`：将 `@validator` 替换为 `@field_validator` (1处)，并更新导入。
+26. 修改 `internal/core/workflow/entities/node_entity.py`：将 `class Config:` 替换为 `model_config = ConfigDict(...)`，并更新导入。
+27. 修改 `internal/core/agent/agents/base_agent.py`：将 `class Config:` 替换为 `model_config = ConfigDict(...)`，并更新导入。
+
 ## 验证
-19. 运行自动测试（如果有）以确保更改没有引入新问题
-20. 验证应用启动无警告和错误，确认 Pydantic V2 迁移成功
+28. 运行自动测试（如果有）以确保更改没有引入新问题
+29. 验证应用启动无警告和错误，确认 Pydantic V2 迁移成功
 
 Implementation Checklist:
 1. 修改 `study/46-检索器的逻辑路由缩减检索范围/1.函数回调规范化输出.py` 中的导入语句

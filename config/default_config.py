@@ -16,6 +16,13 @@ DEFAULT_CONFIG = {
     "SQLALCHEMY_POOL_RECYCLE": 3600,
     "SQLALCHEMY_ECHO": "True",
 
+    # Weaviate数据库配置
+    "WEAVIATE_HTTP_HOST": "localhost",
+    "WEAVIATE_HTTP_PORT": "8080",
+    "WEAVIATE_GRPC_HOST": "localhost",
+    "WEAVIATE_GRPC_PORT": "50051",
+    "WEAVIATE_API_KEY": "",
+
     # Redis数据库配置
     "REDIS_HOST": "localhost",
     "REDIS_PORT": 6379,
@@ -30,4 +37,7 @@ DEFAULT_CONFIG = {
     "CELERY_TASK_IGNORE_RESULT": "False",
     "CELERY_RESULT_EXPIRES": 3600,
     "CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP": "True",
+
+    # 辅助Agent智能体应用id
+    "ASSISTANT_AGENT_ID": "6774fcef-b594-8008-b30c-a05b8190afe6",
 }

@@ -5,6 +5,7 @@
 @Author  : thezehui@gmail.com
 @File    : app_service.py
 """
+import io
 import json
 from dataclasses import dataclass
 from datetime import datetime
@@ -12,24 +13,33 @@ from threading import Thread
 from typing import Any, Generator
 from uuid import UUID
 
+import requests
 from flask import current_app
 from injector import inject
+from langchain_community.utilities.dalle_image_generator import DallEAPIWrapper
 from langchain_core.messages import HumanMessage
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnableParallel
 from langchain_openai import ChatOpenAI
 from redis import Redis
 from sqlalchemy import func, desc
+from werkzeug.datastructures import FileStorage
 
-from internal.core.agent.agents import FunctionCallAgent, AgentQueueManager
+from internal.core.agent.agents import FunctionCallAgent, AgentQueueManager, ReACTAgent
 from internal.core.agent.entities.agent_entity import AgentConfig
 from internal.core.agent.entities.queue_entity import QueueEvent
+from internal.core.language_model import LanguageModelManager
 from internal.core.memory import TokenBufferMemory
 from internal.core.tools.api_tools.providers import ApiProviderManager
 from internal.core.tools.builtin_tools.providers import BuiltinProviderManager
+from internal.entity.ai_entity import OPTIMIZE_PROMPT_TEMPLATE
 from internal.entity.app_entity import AppStatus, AppConfigType, DEFAULT_APP_CONFIG
+from internal.entity.app_entity import GENERATE_ICON_PROMPT_TEMPLATE
 from internal.entity.conversation_entity import InvokeFrom, MessageStatus
 from internal.entity.dataset_entity import RetrievalSource
 from internal.exception import NotFoundException, ForbiddenException, ValidateErrorException, FailException
-from internal.lib.helper import remove_fields
+from internal.lib.helper import remove_fields, get_value_type, generate_random_string
 from internal.model import (
     App,
     Account,
@@ -39,7 +49,7 @@ from internal.model import (
     AppConfig,
     AppDatasetJoin,
     Conversation,
-    Message,
+    Message, Workflow,
 )
 from internal.schema.app_schema import (
     CreateAppReq,
@@ -52,7 +62,11 @@ from pkg.sqlalchemy import SQLAlchemy
 from .app_config_service import AppConfigService
 from .base_service import BaseService
 from .conversation_service import ConversationService
+from .cos_service import CosService
+from .language_model_service import LanguageModelService
 from .retrieval_service import RetrievalService
+from ..core.language_model.entities.model_entity import ModelParameterType, ModelFeature
+from ..entity.workflow_entity import WorkflowStatus
 
 
 @inject
@@ -61,11 +75,82 @@ class AppService(BaseService):
     """应用服务逻辑"""
     db: SQLAlchemy
     redis_client: Redis
+    cos_service: CosService
     conversation_service: ConversationService
     retrieval_service: RetrievalService
     app_config_service: AppConfigService
+    language_model_service: LanguageModelService
     api_provider_manager: ApiProviderManager
     builtin_provider_manager: BuiltinProviderManager
+    language_model_manager: LanguageModelManager
+
+    def auto_create_app(self, name: str, description: str, account_id: UUID) -> None:
+        """根据传递的应用名称、描述、账号id利用AI创建一个Agent智能体"""
+        # 1.创建LLM，用于生成icon提示与预设提示词
+        llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.8)
+
+        # 2.创建DallEApiWrapper包装器
+        dalle_api_wrapper = DallEAPIWrapper(model="dall-e-3", size="1024x1024")
+
+        # 3.构建生成icon链
+        generate_icon_chain = ChatPromptTemplate.from_template(
+            GENERATE_ICON_PROMPT_TEMPLATE
+        ) | llm | StrOutputParser() | dalle_api_wrapper.run
+
+        # 4.生成预设prompt链
+        generate_preset_prompt_chain = ChatPromptTemplate.from_messages([
+            ("system", OPTIMIZE_PROMPT_TEMPLATE),
+            ("human", "应用名称: {name}\n\n应用描述: {description}")
+        ]) | llm | StrOutputParser()
+
+        # 5.创建并行链同时执行两条链
+        generate_app_config_chain = RunnableParallel({
+            "icon": generate_icon_chain,
+            "preset_prompt": generate_preset_prompt_chain,
+        })
+        app_config = generate_app_config_chain.invoke({"name": name, "description": description})
+
+        # 6.将图片下载到本地后上传到腾讯云cos中
+        icon_response = requests.get(app_config.get("icon"))
+        if icon_response.status_code == 200:
+            icon_content = icon_response.content
+        else:
+            raise FailException("生成应用icon图标出错")
+        account = self.db.session.query(Account).get(account_id)
+        upload_file = self.cos_service.upload_file(
+            FileStorage(io.BytesIO(icon_content), filename="icon.png"),
+            True,
+            account,
+        )
+        icon = self.cos_service.get_file_url(upload_file.key)
+
+        # 7.开启数据库自动提交上下文
+        with self.db.auto_commit():
+            # 8.创建应用记录并刷新数据，从而可以拿到应用id
+            app = App(
+                account_id=account.id,
+                name=name,
+                icon=icon,
+                description=description,
+            )
+            self.db.session.add(app)
+            self.db.session.flush()
+
+            # 9.添加草稿记录
+            app_config_version = AppConfigVersion(
+                app_id=app.id,
+                version=0,
+                config_type=AppConfigType.DRAFT,
+                **{
+                    **DEFAULT_APP_CONFIG,
+                    "preset_prompt": app_config.get("preset_prompt", ""),
+                }
+            )
+            self.db.session.add(app_config_version)
+            self.db.session.flush()
+
+            # 10.更新应用配置id
+            app.draft_app_config_id = app_config_version.id
 
     def create_app(self, req: CreateAppReq, account: Account) -> App:
         """创建Agent应用服务"""
@@ -236,8 +321,7 @@ class AppService(BaseService):
                 }
                 for tool in draft_app_config["tools"]
             ],
-            # todo:工作流模块完成后该处可能有变动
-            workflows=draft_app_config["workflows"],
+            workflows=[workflow["id"] for workflow in draft_app_config["workflows"]],
             retrieval_config=draft_app_config["retrieval_config"],
             long_term_memory=draft_app_config["long_term_memory"],
             opening_statement=draft_app_config["opening_statement"],
@@ -427,11 +511,8 @@ class AppService(BaseService):
             status=MessageStatus.NORMAL,
         )
 
-        # todo:5.根据传递的model_config实例化不同的LLM模型，等待多LLM接入后该处会发生变化
-        llm = ChatOpenAI(
-            model=draft_app_config["model_config"]["model"],
-            **draft_app_config["model_config"]["parameters"],
-        )
+        # 5.从语言模型管理器中加载大语言模型
+        llm = self.language_model_service.load_language_model(draft_app_config.get("model_config", {}))
 
         # 6.实例化TokenBufferMemory用于提取短期记忆
         token_buffer_memory = TokenBufferMemory(
@@ -458,12 +539,21 @@ class AppService(BaseService):
             )
             tools.append(dataset_retrieval)
 
-        # todo:10.构建Agent智能体，目前暂时使用FunctionCallAgent
-        agent = FunctionCallAgent(
+        # 10.检测是否关联工作流，如果关联了工作流则将工作流构建成工具添加到tools中
+        if draft_app_config["workflows"]:
+            workflow_tools = self.app_config_service.get_langchain_tools_by_workflow_ids(
+                [workflow["id"] for workflow in draft_app_config["workflows"]]
+            )
+            tools.extend(workflow_tools)
+
+        # 10.根据LLM是否支持tool_call决定使用不同的Agent
+        agent_class = FunctionCallAgent if ModelFeature.TOOL_CALL in llm.features else ReACTAgent
+        agent = agent_class(
             llm=llm,
             agent_config=AgentConfig(
                 user_id=account.id,
                 invoke_from=InvokeFrom.DEBUGGER,
+                preset_prompt=draft_app_config["preset_prompt"],
                 enable_long_term_memory=draft_app_config["long_term_memory"]["enable"],
                 tools=tools,
                 review_config=draft_app_config["review_config"],
@@ -490,7 +580,19 @@ class AppService(BaseService):
                         # 15.叠加智能体消息
                         agent_thoughts[event_id] = agent_thoughts[event_id].model_copy(update={
                             "thought": agent_thoughts[event_id].thought + agent_thought.thought,
+                            # 消息相关数据
+                            "message": agent_thought.message,
+                            "message_token_count": agent_thought.message_token_count,
+                            "message_unit_price": agent_thought.message_unit_price,
+                            "message_price_unit": agent_thought.message_price_unit,
+                            # 答案相关数据
                             "answer": agent_thoughts[event_id].answer + agent_thought.answer,
+                            "answer_token_count": agent_thought.answer_token_count,
+                            "answer_unit_price": agent_thought.answer_unit_price,
+                            "answer_price_unit": agent_thought.answer_price_unit,
+                            # Agent推理统计相关
+                            "total_token_count": agent_thought.total_token_count,
+                            "total_price": agent_thought.total_price,
                             "latency": agent_thought.latency,
                         })
                 else:
@@ -498,7 +600,8 @@ class AppService(BaseService):
                     agent_thoughts[event_id] = agent_thought
             data = {
                 **agent_thought.model_dump(include={
-                    "event", "thought", "observation", "tool", "tool_input", "answer", "latency",
+                    "event", "thought", "observation", "tool", "tool_input", "answer",
+                    "total_token_count", "total_price", "latency",
                 }),
                 "id": event_id,
                 "conversation_id": str(debug_conversation.id),
@@ -508,6 +611,8 @@ class AppService(BaseService):
             yield f"event: {agent_thought.event}\ndata:{json.dumps(data)}\n\n"
 
         # 22.将消息以及推理过程添加到数据库
+        # todo:将数据库数据存储/更新的操作转换为同步，将summary和conversation_name生成放置到Thread执行
+        # todo:考虑将错误信息/超时信息也一并存储到answer中，这个需求可以根据不同的业务逻辑做相应的抉择
         thread = Thread(
             target=self.conversation_service.save_agent_thoughts,
             kwargs={
@@ -563,6 +668,34 @@ class AppService(BaseService):
 
         return messages, paginator
 
+    def get_published_config(self, app_id: UUID, account: Account) -> dict[str, Any]:
+        """根据传递的应用id+账号，获取应用的发布配置"""
+        # 1.获取应用信息并校验权限
+        app = self.get_app(app_id, account)
+
+        # 2.构建发布配置并返回
+        return {
+            "web_app": {
+                "token": app.token_with_default,
+                "status": app.status,
+            }
+        }
+
+    def regenerate_web_app_token(self, app_id: UUID, account: Account) -> str:
+        """根据传递的应用id+账号，重新生成WebApp凭证标识"""
+        # 1.获取应用信息并校验权限
+        app = self.get_app(app_id, account)
+
+        # 2.判断应用是否已发布
+        if app.status != AppStatus.PUBLISHED:
+            raise FailException("应用未发布，无法生成WebApp凭证标识")
+
+        # 3.重新生成token并更新数据
+        token = generate_random_string(16)
+        self.update(app, token=token)
+
+        return token
+
     def _validate_draft_app_config(self, draft_app_config: dict[str, Any], account: Account) -> dict[str, Any]:
         """校验传递的应用草稿配置信息，返回校验后的数据"""
         # 1.校验上传的草稿配置中对应的字段，至少拥有一个可以更新的配置
@@ -581,7 +714,70 @@ class AppService(BaseService):
         ):
             raise ValidateErrorException("草稿配置字段出错，请核实后重试")
 
-        # todo:3.校验model_config字段，等待多LLM接入时完成该步骤校验
+        # 3.校验model_config字段，provider/model使用严格校验(出错的时候直接抛出)，parameters使用宽松校验，出错时使用默认值
+        if "model_config" in draft_app_config:
+            # 3.1 获取模型配置并判断数据是否为字典
+            model_config = draft_app_config["model_config"]
+            if not isinstance(model_config, dict):
+                raise ValidateErrorException("模型配置格式错误，请核实后重试")
+
+            # 3.2 判断model_config键信息是否正确
+            if set(model_config.keys()) != {"provider", "model", "parameters"}:
+                raise ValidateErrorException("模型键配置格式错误，请核实后重试")
+
+            # 3.3 判断模型提供者信息是否正确
+            if not model_config["provider"] or not isinstance(model_config["provider"], str):
+                raise ValidateErrorException("模型服务提供商类型必须为字符串")
+            provider = self.language_model_manager.get_provider(model_config["provider"])
+            if not provider:
+                raise ValidateErrorException("该模型服务提供商不存在，请核实后重试")
+
+            # 3.4 判断模型信息是否正确
+            if not model_config["model"] or not isinstance(model_config["model"], str):
+                raise ValidateErrorException("模型名字必须是否字符串")
+            model_entity = provider.get_model_entity(model_config["model"])
+            if not model_entity:
+                raise ValidateErrorException("该服务提供商下不存在该模型，请核实后重试")
+
+            # 3.5 判断传递的parameters是否正确，如果不正确则设置默认值，并剔除多余字段，补全未传递的字段
+            parameters = {}
+            for parameter in model_entity.parameters:
+                # 3.6 从model_config中获取参数值，如果不存在则设置为默认值
+                parameter_value = model_config["parameters"].get(parameter.name, parameter.default)
+
+                # 3.7 判断参数是否必填
+                if parameter.required:
+                    # 3.8 参数必填，则值不允许为None，如果为None则设置默认值
+                    if parameter_value is None:
+                        parameter_value = parameter.default
+                    else:
+                        # 3.9 值非空则校验数据类型是否正确，不正确则设置默认值
+                        if get_value_type(parameter_value) != parameter.type.value:
+                            parameter_value = parameter.default
+                else:
+                    # 3.10 参数非必填，数据非空的情况下需要校验
+                    if parameter_value is not None:
+                        if get_value_type(parameter_value) != parameter.type.value:
+                            parameter_value = parameter.default
+
+                # 3.11 判断参数是否存在options，如果存在则数值必须在options中选择
+                if parameter.options and parameter_value not in parameter.options:
+                    parameter_value = parameter.default
+
+                # 3.12 参数类型为int/float，如果存在min/max时候需要校验
+                if parameter.type in [ModelParameterType.INT, ModelParameterType.FLOAT] and parameter_value is not None:
+                    # 3.13 校验数值的min/max
+                    if (
+                            (parameter.min and parameter_value < parameter.min)
+                            or (parameter.max and parameter_value > parameter.max)
+                    ):
+                        parameter_value = parameter.default
+
+                parameters[parameter.name] = parameter_value
+
+            # 3.13 覆盖Agent配置中的模型配置
+            model_config["parameters"] = parameters
+            draft_app_config["model_config"] = model_config
 
         # 4.校验dialog_round上下文轮数，校验数据类型以及范围
         if "dialog_round" in draft_app_config:
@@ -652,9 +848,33 @@ class AppService(BaseService):
             # 6.11 重新赋值工具
             draft_app_config["tools"] = validate_tools
 
-        # todo:7.校验workflows，等待工作流模块完成后实现
+        # 7.校验workflow，提取已发布+权限正确的工作流列表进行绑定（更新配置阶段不校验工作流是否可以正常运行）
         if "workflows" in draft_app_config:
-            draft_app_config["workflows"] = []
+            workflows = draft_app_config["workflows"]
+
+            # 7.1 判断workflows是否为列表
+            if not isinstance(workflows, list):
+                raise ValidateErrorException("绑定工作流列表参数格式错误")
+            # 7.2 判断关联的工作流列表是否超过5个
+            if len(workflows) > 5:
+                raise ValidateErrorException("Agent绑定的工作流数量不能超过5个")
+            # 7.3 循环校验工作流的每个参数，类型必须为UUID
+            for workflow_id in workflows:
+                try:
+                    UUID(workflow_id)
+                except Exception as _:
+                    raise ValidateErrorException("工作流参数必须是UUID")
+            # 7.4 判断是否重复关联了工作流
+            if len(set(workflows)) != len(workflows):
+                raise ValidateErrorException("绑定工作流存在重复")
+            # 7.5 校验关联工作流的权限，剔除不属于当前账号，亦或者未发布的工作流
+            workflow_records = self.db.session.query(Workflow).filter(
+                Workflow.id.in_(workflows),
+                Workflow.account_id == account.id,
+                Workflow.status == WorkflowStatus.PUBLISHED,
+            ).all()
+            workflow_sets = set([str(workflow_record.id) for workflow_record in workflow_records])
+            draft_app_config["workflows"] = [workflow_id for workflow_id in workflows if workflow_id in workflow_sets]
 
         # 8.校验datasets知识库列表
         if "datasets" in draft_app_config:

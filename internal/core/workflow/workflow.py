@@ -47,7 +47,7 @@ class Workflow(BaseTool):
     """工作流LangChain工具类"""
     name: str = ""  # 将在__init__中被设置
     description: str = ""  # 将在__init__中被设置
-    
+
     _workflow_config: WorkflowConfig = PrivateAttr(None)
     _workflow: CompiledStateGraph = PrivateAttr(None)
 

@@ -11,6 +11,8 @@ from enum import Enum
 from hashlib import sha3_256
 from typing import Any
 from uuid import UUID
+import secrets
+import string
 
 from langchain_core.documents import Document
 from pydantic import BaseModel
@@ -87,3 +89,23 @@ def convert_model_to_dict(obj: Any, *args, **kwargs):
 
     # 7.对其他类型的字段，保持原样
     return obj
+
+
+def get_value_type(value: Any) -> Any:
+    """根据传递的值获取变量的类型，并将str和bool转换成string和boolean"""
+    # 1.计算变量的类型并转换成字符串
+    value_type = type(value).__name__
+
+    # 2.判断是否为str或者是bool
+    if value_type == "str":
+        return "string"
+    elif value_type == "bool":
+        return "boolean"
+
+    return value_type
+
+
+def generate_random_string(length: int) -> str:
+    """根据传递的长度生成随机字符串，包含大小写字母和数字"""
+    alphabet = string.ascii_letters + string.digits
+    return ''.join(secrets.choice(alphabet) for _ in range(length))

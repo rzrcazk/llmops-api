@@ -35,6 +35,13 @@ class Config:
         }
         self.SQLALCHEMY_ECHO = _get_bool_env("SQLALCHEMY_ECHO")
 
+        # Weaviate 向量数据库配置
+        self.WEAVIATE_HTTP_HOST = _get_env("WEAVIATE_HTTP_HOST")
+        self.WEAVIATE_HTTP_PORT = _get_env("WEAVIATE_HTTP_PORT")
+        self.WEAVIATE_GRPC_HOST = _get_bool_env("WEAVIATE_GRPC_HOST")
+        self.WEAVIATE_GRPC_PORT = _get_bool_env("WEAVIATE_GRPC_PORT")
+        self.WEAVIATE_API_KEY = _get_bool_env("WEAVIATE_API_KEY")
+
         # Redis配置
         self.REDIS_HOST = _get_env("REDIS_HOST")
         self.REDIS_PORT = _get_env("REDIS_PORT")
@@ -51,3 +58,6 @@ class Config:
             "result_expires": int(_get_env("CELERY_RESULT_EXPIRES")),
             "broker_connection_retry_on_startup": _get_bool_env("CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP"),
         }
+
+        # 辅助Agent应用id标识
+        self.ASSISTANT_AGENT_ID = _get_env("ASSISTANT_AGENT_ID")
