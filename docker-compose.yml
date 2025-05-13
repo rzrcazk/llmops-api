@@ -1,0 +1,60 @@
+version: '3'
+
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./storage:/app/storage
+    environment:
+      - SQLALCHEMY_DATABASE_URI=postgresql://postgres:postgres@db:5432/llmops
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+      - REDIS_DB=0
+      - JWT_SECRET_KEY=llmops-api-secret-key-for-jwt-token-2024
+    depends_on:
+      - db
+      - redis
+    restart: always
+
+  db:
+    image: postgres:16-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=llmops
+    restart: always
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    restart: always
+
+  celery:
+    build: .
+    command: celery -A app.http.app:celery worker --loglevel=info
+    volumes:
+      - ./storage:/app/storage
+    environment:
+      - SQLALCHEMY_DATABASE_URI=postgresql://postgres:postgres@db:5432/llmops
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+      - REDIS_DB=0
+      - CELERY_BROKER_DB=1
+      - CELERY_RESULT_BACKEND_DB=1
+      - JWT_SECRET_KEY=llmops-api-secret-key-for-jwt-token-2024
+    depends_on:
+      - db
+      - redis
+      - web
+    restart: always
+
+volumes:
+  postgres_data:
+  redis_data: 

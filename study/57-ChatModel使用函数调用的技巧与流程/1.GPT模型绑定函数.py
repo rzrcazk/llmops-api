@@ -48,13 +48,13 @@ class GaodeWeatherTool(BaseTool):
 # 1.定义工具列表
 gaode_weather = GaodeWeatherTool()
 google_serper = GoogleSerperRun(
-    name="google_serper",
+name: str = "google_serper",
     description=(
         "一个低成本的谷歌搜索API。"
         "当你需要回答有关时事的问题时，可以调用该工具。"
         "该工具的输入是搜索查询语句。"
     ),
-    args_schema=GoogleSerperArgsSchema,
+args_schema: type = GoogleSerperArgsSchema,
     api_wrapper=GoogleSerperAPIWrapper(),
 )
 tool_dict = {

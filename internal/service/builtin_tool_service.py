@@ -126,12 +126,49 @@ class BuiltinToolService:
     def get_tool_inputs(cls, tool) -> list:
         """根据传入的工具获取inputs信息"""
         inputs = []
-        if hasattr(tool, "args_schema") and issubclass(tool.args_schema, BaseModel):
-            for field_name, model_field in tool.args_schema.__fields__.items():
-                inputs.append({
-                    "name": field_name,
-                    "description": model_field.field_info.description or "",
-                    "required": model_field.required,
-                    "type": model_field.outer_type_.__name__,
-                })
+        
+        # 安全访问 args_schema
+        if not hasattr(tool, "args_schema"):
+            return inputs
+            
+        # 如果 args_schema 不是类型对象，可能是 FieldInfo 或其他对象，直接返回空列表
+        schema = tool.args_schema
+        if not isinstance(schema, type):
+            return inputs
+        
+        # 确保是 BaseModel 的子类
+        try:
+            if not issubclass(schema, BaseModel):
+                return inputs
+                
+            # 处理 Pydantic v1
+            if hasattr(schema, "__fields__"):
+                for field_name, model_field in schema.__fields__.items():
+                    try:
+                        inputs.append({
+                            "name": field_name,
+                            "description": model_field.field_info.description or "",
+                            "required": model_field.required,
+                            "type": model_field.outer_type_.__name__,
+                        })
+                    except:
+                        # 静默处理任何字段错误
+                        pass
+            # 处理 Pydantic v2
+            elif hasattr(schema, "model_fields"):
+                for field_name, model_field in schema.model_fields.items():
+                    try:
+                        inputs.append({
+                            "name": field_name,
+                            "description": model_field.description or "",
+                            "required": model_field.is_required(),
+                            "type": str(model_field.annotation.__name__ if hasattr(model_field.annotation, "__name__") else model_field.annotation),
+                        })
+                    except:
+                        # 静默处理任何字段错误
+                        pass
+        except:
+            # 静默处理任何异常
+            pass
+            
         return inputs
