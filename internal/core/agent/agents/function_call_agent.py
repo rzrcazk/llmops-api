@@ -33,6 +33,9 @@ from ...language_model.entities.model_entity import ModelFeature
 class FunctionCallAgent(BaseAgent):
     """基于函数/工具调用的智能体"""
 
+    name: str = "function_call_agent"
+    description: str = "基于函数/工具调用的智能体，支持调用外部工具执行任务"
+
     def _build_agent(self) -> CompiledStateGraph:
         """构建LangGraph图结构编译程序"""
         # 1.创建图
@@ -205,7 +208,7 @@ class FunctionCallAgent(BaseAgent):
                         latency=(time.perf_counter() - start_at),
                     ))
         except Exception as e:
-            logging.exception(f"LLM节点发生错误, 错误信息: {str(e) or 'LLM出现未知错误'}")
+            logging.exception("LLM节点发生错误, 错误信息: %(error)s", {"error": str(e) or "LLM出现未知错误"})
             self.agent_queue_manager.publish_error(
                 state["task_id"],
                 f"LLM节点发生错误, 错误信息: {str(e) or 'LLM出现未知错误'}",
